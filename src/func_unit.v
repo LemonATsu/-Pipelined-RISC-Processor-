@@ -96,8 +96,10 @@ module func_unit(
                  F = B;
                end
       LSR    : begin
+                 F = B >> SH;
                end
       LSL    : begin
+                 F = B << SH;
                end
     endcase
 
