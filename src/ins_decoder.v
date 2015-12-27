@@ -5,45 +5,92 @@
 // AA     : 19-15
 // BA     : 14-10
 
-
-// decode result :
-// bits:      5            5           5          1       4       1    1    1    1    1    1
-//      --------------------------------------------------------------------------------------
-//      |            |            |            |    |          |    |    |    |    |    |    | 
-//      |     DA     |     AA     |     BA     | MB |    FS    | MD | RW | MW | PL | JB | BC |
-//      |   [25:21]  |   [20:16]  |   [15:11]  |[10]|  [9:6]   | [5]| [4]| [3]| [2]| [1]| [0]| 
-//      --------------------------------------------------------------------------------------
-//
-
 module instruction_decoder (
-  input  wire  [31:0] instruction,
-  output wire  [25:0]control_word
-);
-wire  [4:0]  DA;
-wire  [4:0]  AA;
-wire  [4:0]  BA;
-wire         MB;
-wire  [4:0]  FS;
-wire  [4:0]  SH;
-wire         MD;
-wire         RW;
-wire         MW;
-wire         PL;
-wire         JB;
-wire         BC;
+    input  wire [31:0] instruction,
+    output wire [31:0] DA,
+    output wire [31:0] AA,
+    output wire [31:0] BA,
+    output reg         RW,
+    output reg  [1:0]  MD,
+    output reg  [1:0]  BS,
+    output reg         PS,
+    output reg         MW,
+    output reg  [3:0]  FS,
+    output reg         MB,
+    output reg         MA,
+    output reg         CS
+    );
+wire [6:0] opcode;
 
-assign DA = instruction[24:20];
-assign AA = instruction[19:15];
-assign BA = instruction[14:10];
-assign MB = instruction[31];
-assign FS = {instruction[28:16], ~PL & instruction[25]};
-assign SH = instruction[4:0];
-assign MD = instruction[29];
-assign RW = ~(instruction[30]);
-assign MW = ~(instruction[31]) & instruction[30];
-assign PL = instruction[31] & instruction[30];
-assign JB = instruction[29];
-assign BC = instruction[25];
-assign control_word = {DA, AA, BA, MB, FS, MD, RW, MW, PL, JB, BC};
+assign DA     = instruction[24:20];
+assign AA     = instruction[19:15];
+assign BA     = instruction[14:10];
+assign opcode = instruction[31:25];
+
+parameter NOP  = 7'b000_0000,
+          MOVA = 7'b100_0000,
+          ADD  = 7'b000_0010,
+          SUB  = 7'b000_0101,
+          AND  = 7'b000_1000,
+          OR   = 7'b000_1001,
+          XOR  = 7'b000_1010,
+          NOT  = 7'b000_1011,
+          ADI  = 7'b010_0010,
+          SBI  = 7'b010_0101,
+          ANI  = 7'b010_1000,
+          ORI  = 7'b010_1001,
+          XRI  = 7'b010_1010,
+          AIU  = 7'b100_0010,
+          SIU  = 7'b100_0101,
+          MOVB = 7'b000_1100,
+          LSR  = 7'b000_1101,
+          LSL  = 7'b000_1110,
+          LD   = 7'b001_0000,
+          ST   = 7'b010_0000,
+          JMR  = 7'b111_0000,
+          SLT  = 7'b110_0101,
+          BZ   = 7'b110_0000,
+          BNZ  = 7'b100_1100,
+          JMP  = 7'b110_1000,
+          JML  = 7'b011_0000;
+
+  always @(*) begin
+    {RW, MD, BS, PS, MW, MB, MA, CS} = 0;
+    FS = opcode[3:0];
+    case(opcode)
+      // These instructions need only RW, other part are either 0 or don't care.
+      // Just all to 0, and RW to 1.
+      MOVA,
+      MOVB,
+      ADD ,
+      SUB ,
+      AND , 
+      OR  ,
+      XOR ,
+      LSR ,
+      LSL ,
+      NOT  : RW = 1'b1;
+      // These instructions need RW, MB, CS. Other are either 0 or don't care.
+      ADI ,
+      SBI  : {RW, MB, CS} = 3'b1_1_1;
+      // These instructions need only RW and MB.
+      ANI ,
+      ORI ,
+      XRI ,
+      AIU ,
+      SIU  : {RW, MB} = 2'b1_1;
+      LD   : {RW, MD} = 3'b1_01;
+      ST   : MW = 1'b1;
+      JMR  : BS = 2'b10;
+      SLT  : {RW, MD} = 3'b1_10;
+      BZ   : {BS, MB, CS} = 4'b01_1_1;
+      BNZ  : {BS, PS, FS, MB, CS} = 9'b01_1_0000_1_1;
+      JMP  : {BS, MB, CS} = 4'b11_1_1;
+      JML  : {RW, BS, MB, MA, CS} = 6'b1_11_1_1_1;
+    endcase
+  end
+
+
+
 
 endmodule
