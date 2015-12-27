@@ -2,25 +2,17 @@ module register_file (
   input clk,
   input rst_n,
   input RW,
-  input MA,
-  input HA,
-  input MB,
-  input HB,
   input  [4:0]  DA,
   input  [4:0]  AA,
   input  [4:0]  BA,
   input  [31:0] BUS_D,
-  input  [31:0] FWD,
-  input  [31:0] CONST_B,
-  input  [31:0] PC_1,
-  output reg [31:0] BUS_A,
-  output reg [31:0] BUS_B
+  output reg [31:0] REG_A,
+  output reg [31:0] REG_B
 );
 
   reg [31:0] R00, R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R11, R12, R13, R14, R15,
              R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29, R30, R31;
 
-  reg [31:0] REG_A, REG_B;
 
   always @(posedge clk) begin
     if(!rst_n) begin
@@ -140,8 +132,7 @@ module register_file (
 
   end
 
-  // MUX B
-  always @(*) begin
+  /*always @(*) begin
     case({HB, MB})
       2'b00 : BUS_B = REG_B;
       2'b01 : BUS_B = CONST_B;
@@ -149,14 +140,13 @@ module register_file (
     endcase
   end
 
-  // MUX A
   always @(*) begin
     case({HA, MA})
       2'b00 : BUS_A = REG_A;
       2'b01 : BUS_A = PC_1;
       2'b10 : BUS_A = FWD;
     endcase
-  end
+  end*/
 
 
 endmodule

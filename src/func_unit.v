@@ -1,4 +1,3 @@
-`timescale 10ns / 1ps
 module func_unit(
   input [3:0]  FS,
   input [4:0]  SH,
@@ -26,8 +25,8 @@ module func_unit(
             T_B    = 4'b1100,
             LSR    = 4'b1101,
             LSL    = 4'b1110,
-            ONE    = 16'h0000_0001,
-            NONE   = 16'hFFFF_FFFF;
+            ONE    = 32'h0000_0001,
+            NONE   = 32'hFFFF_FFFF;
 
   reg [31:0] NA;
   reg [31:0] NB;
