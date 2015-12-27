@@ -6,10 +6,10 @@
 // BA     : 14-10
 
 module instruction_decoder (
-    input  wire [31:0] instruction,
-    output wire [31:0] DA,
-    output wire [31:0] AA,
-    output wire [31:0] BA,
+    input  wire [31:0] IR,
+    output wire [4:0] DA,
+    output wire [4:0] AA,
+    output wire [4:0] BA,
     output reg         RW,
     output reg  [1:0]  MD,
     output reg  [1:0]  BS,
@@ -22,10 +22,10 @@ module instruction_decoder (
     );
 wire [6:0] opcode;
 
-assign DA     = instruction[24:20];
-assign AA     = instruction[19:15];
-assign BA     = instruction[14:10];
-assign opcode = instruction[31:25];
+assign DA     = IR[24:20];
+assign AA     = IR[19:15];
+assign BA     = IR[14:10];
+assign opcode = IR[31:25];
 
 parameter NOP  = 7'b000_0000,
           MOVA = 7'b100_0000,
@@ -78,14 +78,14 @@ parameter NOP  = 7'b000_0000,
       ORI ,
       XRI ,
       AIU ,
-      SIU  : {RW, MB} = 2'b1_1;
-      LD   : {RW, MD} = 3'b1_01;
-      ST   : MW = 1'b1;
-      JMR  : BS = 2'b10;
-      SLT  : {RW, MD} = 3'b1_10;
-      BZ   : {BS, MB, CS} = 4'b01_1_1;
+      SIU  : {RW, MB}             = 2'b1_1;
+      LD   : {RW, MD}             = 3'b1_01;
+      ST   : MW                   = 1'b1;
+      JMR  : BS                   = 2'b10;
+      SLT  : {RW, MD}             = 3'b1_10;
+      BZ   : {BS, MB, CS}         = 4'b01_1_1;
       BNZ  : {BS, PS, FS, MB, CS} = 9'b01_1_0000_1_1;
-      JMP  : {BS, MB, CS} = 4'b11_1_1;
+      JMP  : {BS, MB, CS}         = 4'b11_1_1;
       JML  : {RW, BS, MB, MA, CS} = 6'b1_11_1_1_1;
     endcase
   end
