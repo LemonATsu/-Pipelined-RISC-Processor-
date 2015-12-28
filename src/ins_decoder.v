@@ -7,9 +7,9 @@
 
 module instruction_decoder (
     input  wire [31:0] IR,
-    output wire [4:0] DA,
-    output wire [4:0] AA,
-    output wire [4:0] BA,
+    output wire [4:0]  DA,
+    output wire [4:0]  AA,
+    output wire [4:0]  BA,
     output reg         RW,
     output reg  [1:0]  MD,
     output reg  [1:0]  BS,

@@ -101,7 +101,6 @@ module func_unit(
                  F = B << SH;
                end
     endcase
-
     Z = F ? 0 : 1;
     N = F[31];
   end
