@@ -31,8 +31,9 @@ reg  [4:0]  ID_SH;               // for ID, came out from IR directly.
 
 wire V, C, N, Z;                 // for EX, came out from func unit.
 wire [31:0]   F;                 // for EX, came out from func unit.
-wire EX_RW, EX_PS, EX_MW;        // for EX, came from ID stage.
-wire [1:0]  EX_MD, EX_BS;        // for EX, came from ID stage.
+reg  EX_RW, EX_PS, EX_MW;        // for EX, came from ID stage.
+reg  [1:0]  EX_MD, EX_BS;        // for EX, came from ID stage.
+reg  [4:0]  EX_DA;               // for EX, came out from ins decoder.
 reg  [3:0]  EX_FS;               // for EX, came from ID stage.
 reg  [4:0]  EX_SH;               // for EX, came from ID stage.
 reg  [31:0] BUS_D;          
@@ -68,8 +69,19 @@ reg  [31:0] BUS_D;
     end
   end
 
+  // Handle things that will pass to next stage.
   always @(posedge clk) begin
-      EX_FS = ID_FS;
+      if(!rst_n) begin
+        {EX_FS, EX_DA, EX_MD, EX_BS, EX_PS, EX_FS} = 0;
+      end else begin
+        EX_RW = ID_RW;
+        EX_DA = ID_DA;
+        EX_MD = ID_MD;
+        EX_BS = ID_BS;
+        EX_PS = ID_PS;
+        EX_MW = ID_MW;
+        EX_FS = ID_FS;
+      end
   end
 
 /* stage : IF */
@@ -99,6 +111,7 @@ instruction_decoder INSDE(.IR(IR)   , .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
   
   // mux A
   always @(*) begin
+    BUS_A = RA;
     case({HA, MA})
       2'b00 : BUS_A = RA;
       2'b01 : BUS_A = PC_1; // for JML
@@ -108,8 +121,9 @@ instruction_decoder INSDE(.IR(IR)   , .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
 
   // mux B
   always @(*) begin
+    BUS_B = RB;
     case({HB, MB})
-      2'b00 : BUS_B = RA;
+      2'b00 : BUS_B = RB;
       2'b01 : BUS_B = IM; // for constant.
       3'b10 : BUS_B = FWD;
     endcase

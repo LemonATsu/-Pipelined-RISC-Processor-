@@ -25,6 +25,13 @@ module pipe_pc_test;
     #(period) ir    = 32'hffff_cccc;
     #(period) ir    = 32'habff_aaaa;
     #(period) ir    = 32'hcdff_dddd;
+    #(period) ir    = 32'hcdff_dddd;
+    #(period) ir    = 32'hade1_8712;
+    #(period) ir    = 32'hacdc_9638;
+    #(period) ir    = 32'h6312_8888;
+    #(period) ir    = 32'h7fff_ffff;
+    #(period) ir    = 32'h8000_0000;
+    #(period) ir    = 32'h1234_abcd;
     #(12*period)
     $finish;
   end
