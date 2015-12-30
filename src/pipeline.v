@@ -1,11 +1,13 @@
 module pipeline(
   input  clk, rst_n,
-  `ifdef N_MEM_TEST
-  input  [31:0] IF,
-  `endif
-  input  [31:0] D_OUT, // out from memory
-  output [31:0] D_IN,  // go into memory
-  output [31:0] M_ADDR // memory access.
+  input  [31:0] IR ,  // out from memory
+  input  [31:0] D_IN,  // out from memory
+  output reg [31:0] D_OUT, // go  into memory
+  output reg [10:0] I_ADDR,
+  output reg [10:0] D_ADDR,// memory access.
+  output reg im_oen,
+  output reg dm_oen,
+  output reg dm_wen
 );
 
 
@@ -15,7 +17,6 @@ reg  [31:0] PC, PC_1, PC_2;      // Per stage PC, maintain the PC of the stage.
 wire [1:0]  C_SELECT;
 
 
-reg  [31:0] IR;                  // for ID, came from IF.
 reg  HA, HB;                     // for ID, came out from fwd unit.
 wire MA, MB;                     // for ID, came out from ins decoder.
 wire CS;                         // for ID, came out from ins decoder.
@@ -42,19 +43,25 @@ reg  [4:0]  EX_SH;               // for EX, came from ID stage.
 reg WB_RW;
 reg [1:0]  WB_MD;
 reg [4:0]  WB_DA;
-reg [31:0] WB_F, WB_SLT, WB_DOUT;
+reg [31:0] WB_F, WB_SLT, WB_DIN;
 reg [31:0] BUS_D;          
 
+reg dmo_next, dmw_next;
 
 /* Stage manager */
   // handle per stage pc.
+
   always @(posedge clk) begin
     if(!rst_n) begin
       {PC, PC_1, PC_2} = 0;
+      I_ADDR           = 0;
+      im_oen           = 1'b1;
     end else begin
+      im_oen = 1'b0;
       PC_2  = PC_1;
       PC_1  = PC;
       PC    = PC_NEXT;
+      I_ADDR= PC[10:0]; // fetch Instruction by PC_NEXT, else it will consume addtional cycle.
     end
   end
 
@@ -67,33 +74,22 @@ reg [31:0] BUS_D;
     endcase
   end
 
-  // handle shift amount between ID and EX.
-  always @(posedge clk) begin
-    if(!rst_n) begin
-      {ID_SH, IM} = 0;
-    end else begin
-      EX_SH = ID_SH;
-      ID_SH = IR[4:0];
-    end
-  end
-
   // Handle things that will pass to next stage.
   always @(posedge clk) begin
       if(!rst_n) begin
-        {WB_RW, WB_MD, WB_DA, WB_F, WB_SLT, WB_DOUT}      = 0;
+        {WB_RW, WB_MD, WB_DA, WB_F, WB_SLT, WB_DIN}      = 0;
         {EX_FS, EX_RW, EX_DA, EX_MD, EX_BS, EX_PS, EX_FS} = 0;
+        {ID_SH, IM} = 0;
       end else begin
         WB_RW   = EX_RW;
         WB_MD   = EX_MD;
         WB_DA   = EX_DA;
         WB_F    = F;
         WB_SLT  = {31'b0, N ^ Z};
-        WB_DOUT = D_OUT;
+        WB_DIN = D_IN;
         
         EX_RW   = ID_RW;
         EX_DA   = ID_DA;
-        EX_AA   = ID_AA; // for modified to 5 stage.
-        EX_BA   = ID_BA; // for modified to 5 stage.
         EX_MD   = ID_MD;
         EX_BS   = ID_BS;
         EX_PS   = ID_PS;
@@ -101,14 +97,14 @@ reg [31:0] BUS_D;
         EX_FS   = ID_FS;
         EX_BUSA = BUS_A;
         EX_BUSB = BUS_B;
-        IR      = IF;
+        EX_SH = ID_SH;
+        
+        ID_SH = IR[4:0];
       end
   end
 
 /* stage : IF */
-
-// step 1. retreive IR from instruction memory.
-// step 2. if branch happen, make it become nop.
+// already implement in PC controller.
 
 
 
@@ -117,7 +113,7 @@ reg [31:0] BUS_D;
 // We don't need to have a clock port.
 // WB_DA only change when clock raise.
 // WB_RW only change when clock raise.
-// WB_DOUT, WB_F, WB_SLT only change when clock raise => BUS_D only change when clock raise.
+// WB_DIN, WB_F, WB_SLT only change when clock raise => BUS_D only change when clock raise.
 // So basically, all port about register write only change when clock raise. 
 register_file       REGF (.rst_n(rst_n), .RW(WB_RW),
                           .DA(WB_DA), .AA(ID_AA)   , .BA(ID_BA), .BUS_D(BUS_D),
@@ -154,13 +150,13 @@ instruction_decoder INSDE(.IR(IR)   , .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
       2'b01 : BUS_B = IM; // for constant.
       3'b10 : BUS_B = FWD;
     endcase
+    D_OUT = BUS_B;
   end
 
 
 /* stage : EX */
 func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB), 
                     .V(V), .C(C), .N(N), .Z(Z), .F(F));
-
 
 
   // hazard detect unit 
@@ -178,9 +174,26 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
     FWD = 0;
     case(EX_MD)
       2'b00 : FWD = F;
-      2'b01 : FWD = D_OUT;
+      2'b01 : FWD = D_IN;
       2'b10 : FWD = {31'b0, N ^ Z};
     endcase
+  end
+  
+  always @(*) begin
+    // Not cool for this. 
+    // Because EX_BUSA won't change as soon as
+    // clk raise, so the memory read operation will consume
+    // an addtional cycle.
+    // so we connect BUS_A to D_ADDR instead of EX_BUSA.
+    // It should be some more elegant solution, 
+    // But I cannot figure it out currently.
+    D_ADDR   = BUS_A;
+    dm_oen   = 1'b1;
+    dm_wen   = 1'b1;
+    if(EX_MW)
+      dm_wen = 1'b0;
+    if(EX_MD[0])
+      dm_oen = 1'b0;
   end
 
 /* stage : WB */
@@ -190,7 +203,7 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
     BUS_D = 0;
     case(WB_MD)
       2'b00 : BUS_D = WB_F;
-      2'b01 : BUS_D = WB_DOUT;
+      2'b01 : BUS_D = WB_DIN;
       2'b10 : BUS_D = WB_SLT;
     endcase
   end
