@@ -10,11 +10,10 @@ module pipeline(
   output reg dm_wen
 );
 
-
-wire [31:0] BrA, RAA;
+reg  [31:0] BrA, RAA;
 reg  [31:0] MUX_C, PC_NEXT;
 reg  [31:0] PC, PC_1, PC_2;      // Per stage PC, maintain the PC of the stage.
-wire [1:0]  C_SELECT;
+reg  [1:0]  C_SELECT;
 
 
 reg  HA, HB;                     // for ID, came out from fwd unit.
@@ -29,10 +28,11 @@ reg  [31:0] BUS_A, BUS_B;        // for ID, came out from reg A/B.
 reg  [31:0] FWD;                 // for ID, came out from fwd unit.
 reg  [31:0] IM;                  // for ID, came out from constant unit.
 reg  [4:0]  ID_SH;               // for ID, came out from IR directly.
+reg  flush_ID;                   // for ID, This will flush next IR.
 
 wire V, C, N, Z;                 // for EX, came out from func unit.
 wire [31:0]   F;                 // for EX, came out from func unit.
-reg  [31:0] EX_BUSA, EX_BUSB;        // for EX, came from ID stage.
+reg  [31:0] EX_BUSA, EX_BUSB;    // for EX, came from ID stage.
 reg  EX_RW, EX_PS, EX_MW;        // for EX, came from ID stage.
 reg  [1:0]  EX_MD, EX_BS;        // for EX, came from ID stage.
 reg  [4:0]  EX_DA, EX_AA, EX_BA; // for EX, came from ID stage. Note that AA, BA may not be used. It's for modified to 5 stage.
@@ -40,67 +40,76 @@ reg  [3:0]  EX_FS;               // for EX, came from ID stage.
 reg  [4:0]  EX_SH;               // for EX, came from ID stage.
 
 
-reg WB_RW;
-reg [1:0]  WB_MD;
-reg [4:0]  WB_DA;
-reg [31:0] WB_F, WB_SLT, WB_DIN;
+reg WB_RW;                       // for WB, came from EX stage.
+reg [1:0]  WB_MD;                // for WB, came from EX stage.
+reg [4:0]  WB_DA;                // for WB, destination address.
+reg [31:0] WB_F, WB_SLT, WB_DIN; // for WB, F came out from func unit, slt is smaller than flag, DIN is read from memory.
 reg [31:0] BUS_D;          
 
-reg dmo_next, dmw_next;
+// instruction that will be sent to instruction decoder. If C_SELECT not equal to zero,
+// It will flush current IR. And flush ID will help flush next IR.
+wire [31:0] instrc;
+assign instrc = ((C_SELECT != 2'b00) | flush_ID )? 32'b0 : IR;
 
 /* Stage manager */
   // handle per stage pc.
 
-  always @(posedge clk) begin
+  /*always @(posedge clk) begin
     if(!rst_n) begin
       {PC, PC_1, PC_2} = 0;
       I_ADDR           = 0;
       im_oen           = 1'b1;
     end else begin
       im_oen = 1'b0;
-      PC_2  = PC_1;
-      PC_1  = PC;
-      PC    = PC_NEXT;
-      I_ADDR= PC[10:0]; // fetch Instruction by PC_NEXT, else it will consume addtional cycle.
+      PC_2   = PC_1;
+      PC_1   = PC;
+      PC     = PC_NEXT;
+      I_ADDR = PC[10:0]; // fetch Instruction by PC_NEXT, else it will consume addtional cycle.
     end
-  end
+  end*/
 
-  always @(*) begin
-    PC_NEXT = PC + 1;
-    case(C_SELECT)
-      2'b01 : PC_NEXT = BrA;
-      2'b10 : PC_NEXT = RAA;
-      2'b11 : PC_NEXT = BrA;
-    endcase
-  end
 
   // Handle things that will pass to next stage.
   always @(posedge clk) begin
-      if(!rst_n) begin
-        {WB_RW, WB_MD, WB_DA, WB_F, WB_SLT, WB_DIN}      = 0;
-        {EX_FS, EX_RW, EX_DA, EX_MD, EX_BS, EX_PS, EX_FS} = 0;
-        {ID_SH, IM} = 0;
-      end else begin
-        WB_RW   = EX_RW;
-        WB_MD   = EX_MD;
-        WB_DA   = EX_DA;
-        WB_F    = F;
-        WB_SLT  = {31'b0, N ^ Z};
-        WB_DIN = D_IN;
+    if(!rst_n) begin
+      // for pc.
+      {PC, PC_1, PC_2} = 0;
+      I_ADDR           = 0;
+      im_oen           = 1'b1;
+      
+      // for each stage. 
+      {WB_RW, WB_MD, WB_DA, WB_F, WB_SLT, WB_DIN}       = 0;
+      {EX_FS, EX_RW, EX_DA, EX_MD, EX_BS, EX_PS, EX_FS} = 0;
+      flush_ID    = 0;
+    end else begin
+      // for pc.
+      im_oen = 1'b0;
+      PC_2   = PC_1;
+      PC_1   = PC;
+      PC     = PC_NEXT;
+      I_ADDR = PC[10:0]; // fetch Instruction by PC_NEXT, else it will consume addtional cycle.
+      
+      // for each stage
+      WB_RW   = EX_RW;
+      WB_MD   = EX_MD;
+      WB_DA   = EX_DA;
+      WB_F    = F;
+      WB_SLT  = {31'b0, N ^ Z};
+      WB_DIN  = D_IN;
         
-        EX_RW   = ID_RW;
-        EX_DA   = ID_DA;
-        EX_MD   = ID_MD;
-        EX_BS   = ID_BS;
-        EX_PS   = ID_PS;
-        EX_MW   = ID_MW;
-        EX_FS   = ID_FS;
-        EX_BUSA = BUS_A;
-        EX_BUSB = BUS_B;
-        EX_SH = ID_SH;
-        
-        ID_SH = IR[4:0];
-      end
+      EX_RW   = ID_RW;
+      EX_DA   = ID_DA;
+      EX_MD   = ID_MD;
+      EX_BS   = ID_BS;
+      EX_PS   = ID_PS;
+      EX_MW   = ID_MW;
+      EX_FS   = ID_FS;
+      EX_BUSA = BUS_A;
+      EX_BUSB = BUS_B;
+      EX_SH   = ID_SH;
+      flush_ID= C_SELECT;        
+      D_OUT   = EX_BUSB;
+    end
   end
 
 /* stage : IF */
@@ -119,18 +128,20 @@ register_file       REGF (.rst_n(rst_n), .RW(WB_RW),
                           .DA(WB_DA), .AA(ID_AA)   , .BA(ID_BA), .BUS_D(BUS_D),
                           .REG_A(RA), .REG_B(RB));
 
-instruction_decoder INSDE(.IR(IR)   , .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
-                          .RW(ID_RW), .MD(ID_MD), .BS(ID_BS), .PS(ID_PS), 
-                          .MW(ID_MW), .FS(ID_FS), .MB(MB)   , .MA(MA)   , .CS(CS));
+instruction_decoder INSDE(.IR(instrc), .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
+                          .RW(ID_RW) , .MD(ID_MD), .BS(ID_BS), .PS(ID_PS), 
+                          .MW(ID_MW) , .FS(ID_FS), .MB(MB)   , .MA(MA)   , .CS(CS));
   // constant unit
   always @(*) begin
-    IM = {17'h0_0000 ,IR[14:0]};
+    IM      = {17'h0_0000 ,IR[14:0]};
+    ID_SH   = IR[4:0];
     // IF CS is true, and the leftmost of imm is 1,
     // it need to be extend.
     if(CS & IR[14]) begin
       IM = {17'h1_ffff, IR[14:0]};
     end
   end
+
   
   // mux A
   always @(*) begin
@@ -150,7 +161,6 @@ instruction_decoder INSDE(.IR(IR)   , .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
       2'b01 : BUS_B = IM; // for constant.
       3'b10 : BUS_B = FWD;
     endcase
-    D_OUT = BUS_B;
   end
 
 
@@ -179,7 +189,7 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
     endcase
   end
   
-  always @(*) begin
+  always @(EX_MW, EX_MD, BUS_A) begin
     // Not cool for this. 
     // Because EX_BUSA won't change as soon as
     // clk raise, so the memory read operation will consume
@@ -187,13 +197,17 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
     // so we connect BUS_A to D_ADDR instead of EX_BUSA.
     // It should be some more elegant solution, 
     // But I cannot figure it out currently.
-    D_ADDR   = BUS_A;
     dm_oen   = 1'b1;
     dm_wen   = 1'b1;
     if(EX_MW)
       dm_wen = 1'b0;
     if(EX_MD[0])
       dm_oen = 1'b0;
+    D_ADDR   = dm_wen ? BUS_A : EX_BUSA;
+  end
+
+  always @(*) begin
+    BrA = PC_2 + EX_BUSB + 1;
   end
 
 /* stage : WB */
@@ -208,5 +222,17 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
     endcase
   end
 
+  always @(*) begin
+    PC_NEXT = PC + 1;
+    case(C_SELECT)
+      2'b01 : PC_NEXT = BrA;
+      2'b10 : PC_NEXT = RAA;
+      2'b11 : PC_NEXT = BrA;
+    endcase
+  end
+
+  always @(*) begin
+    C_SELECT = {EX_BS[1], (((EX_PS ^ Z) | EX_BS[1]) & EX_BS[0])};
+  end
 
 endmodule
