@@ -55,7 +55,14 @@ parameter NOP  = 7'b000_0000,
           JML  = 7'b011_0000;
 
   always @(*) begin
-    {RW, MD, BS, PS, MW, MB, MA, CS} = 0;
+    RW = 0;
+    MD = 0;
+    BS = 0;
+    PS = 0;
+    MW = 0;
+    MB = 0;
+    MA = 0;
+    CS = 0;
     FS = opcode[3:0];
     case(opcode)
       // These instructions need only RW, other part are either 0 or don't care.

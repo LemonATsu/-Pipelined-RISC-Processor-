@@ -1,4 +1,5 @@
 module register_file (
+  input clk,
   input rst_n,
   input RW,
   input  [4:0]  DA,
@@ -13,10 +14,40 @@ module register_file (
              R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29, R30, R31;
 
 
-  always @(*) begin
+  always @(posedge clk) begin
     if(!rst_n) begin
-      {R00, R01, R02, R03, R04, R05, R06, R07, R08, R09, R10, R11, R12, R13, R14, R15,
-             R16, R17, R18, R19, R20, R21, R22, R23, R24, R25, R26, R27, R28, R29, R30, R31} = 1024'b0;
+      R00 = 0;
+      R01 = 0;
+      R02 = 0;
+      R03 = 0;
+      R04 = 0;
+      R05 = 0;
+      R06 = 0;
+      R07 = 0;
+      R08 = 0;
+      R09 = 0;
+      R10 = 0;
+      R11 = 0;
+      R12 = 0;
+      R13 = 0;
+      R14 = 0;
+      R15 = 0;
+      R16 = 0;
+      R17 = 0;
+      R18 = 0;
+      R19 = 0;
+      R20 = 0;
+      R21 = 0;
+      R22 = 0;
+      R23 = 0;
+      R24 = 0;
+      R25 = 0;
+      R26 = 0;
+      R27 = 0;
+      R28 = 0;
+      R29 = 0;
+      R30 = 0;
+      R31 = 0;
     end else begin
       if(RW) begin
         case(DA)
@@ -58,8 +89,6 @@ module register_file (
 
   // read out data from register file.
   always @(*) begin
-    REG_A = 32'b0;
-    REG_B = 32'b0;
 
     case(AA)
       5'd01 : REG_A = R01;
@@ -93,6 +122,7 @@ module register_file (
       5'd29 : REG_A = R29;
       5'd30 : REG_A = R30;
       5'd31 : REG_A = R31;
+      default:REG_A = 0;
     endcase
 
     case(BA)
@@ -127,6 +157,7 @@ module register_file (
       5'd29 : REG_B = R29;
       5'd30 : REG_B = R30;
       5'd31 : REG_B = R31;
+      default:REG_B = 0;
     endcase
 
   end

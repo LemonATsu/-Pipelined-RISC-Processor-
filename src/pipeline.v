@@ -14,7 +14,7 @@ reg  [31:0] BrA, RAA;
 reg  [31:0] MUX_C, PC_NEXT;
 reg  [31:0] PC, PC_1, PC_2;      // Per stage PC, maintain the PC of the stage.
 reg  [1:0]  C_SELECT;
-
+reg  [1:0]  C_SELECT_NEXT;
 
 reg  HA, HB;                     // for ID, came out from fwd unit.
 wire MA, MB;                     // for ID, came out from ins decoder.
@@ -45,11 +45,23 @@ reg [1:0]  WB_MD;                // for WB, came from EX stage.
 reg [4:0]  WB_DA;                // for WB, destination address.
 reg [31:0] WB_F, WB_SLT, WB_DIN; // for WB, F came out from func unit, slt is smaller than flag, DIN is read from memory.
 reg [31:0] BUS_D;          
+  reg WHA, WHB;
 
 // instruction that will be sent to instruction decoder. If C_SELECT not equal to zero,
 // It will flush current IR. And flush ID will help flush next IR.
 wire [31:0] instrc;
-assign instrc = ((C_SELECT != 2'b00) | flush_ID )? 32'b0 : IR;
+assign instrc = ((C_SELECT != 2'b00) | flush_ID  | !rst_n)? 32'b0 : IR;
+/*reg [31:0] instrc;
+reg s_flag;
+  always @(posedge clk) begin
+    if(!rst_n) begin
+      s_flag = 0;
+    end else begin
+      instrc = ((C_SELECT != 2'b00) | flush_ID  | !s_flag )? 32'b0 : IR;
+      s_flag = 1;
+    end
+  end*/
+
 
 /* Stage manager */
   // handle per stage pc.
@@ -73,22 +85,34 @@ assign instrc = ((C_SELECT != 2'b00) | flush_ID )? 32'b0 : IR;
   always @(posedge clk) begin
     if(!rst_n) begin
       // for pc.
-      {PC, PC_1, PC_2} = 0;
+      PC = 0;
+      PC_1 = 0;
+      PC_2 = 0;
       I_ADDR           = 0;
       im_oen           = 1'b1;
       
       // for each stage. 
-      {WB_RW, WB_MD, WB_DA, WB_F, WB_SLT, WB_DIN}       = 0;
-      {EX_FS, EX_RW, EX_DA, EX_MD, EX_BS, EX_PS, EX_FS} = 0;
+      WB_RW = 0;
+      WB_MD = 0;
+      WB_DA = 0;
+      WB_F  = 0;
+      WB_SLT= 0;
+      WB_DIN= 0;
+
+      EX_FS = 0;
+      EX_RW = 0;
+      EX_DA = 0;
+      EX_MD = 0;
+      EX_BS = 0;
+      EX_PS = 0;
       flush_ID    = 0;
-    end else begin
+  end else begin
       // for pc.
       im_oen = 1'b0;
       PC_2   = PC_1;
       PC_1   = PC;
       PC     = PC_NEXT;
       I_ADDR = PC[10:0]; // fetch Instruction by PC_NEXT, else it will consume addtional cycle.
-      
       // for each stage
       WB_RW   = EX_RW;
       WB_MD   = EX_MD;
@@ -124,7 +148,7 @@ assign instrc = ((C_SELECT != 2'b00) | flush_ID )? 32'b0 : IR;
 // WB_RW only change when clock raise.
 // WB_DIN, WB_F, WB_SLT only change when clock raise => BUS_D only change when clock raise.
 // So basically, all port about register write only change when clock raise. 
-register_file       REGF (.rst_n(rst_n), .RW(WB_RW),
+register_file       REGF (.clk(clk), .rst_n(rst_n), .RW(WB_RW),
                           .DA(WB_DA), .AA(ID_AA)   , .BA(ID_BA), .BUS_D(BUS_D),
                           .REG_A(RA), .REG_B(RB));
 
@@ -133,33 +157,35 @@ instruction_decoder INSDE(.IR(instrc), .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
                           .MW(ID_MW) , .FS(ID_FS), .MB(MB)   , .MA(MA)   , .CS(CS));
   // constant unit
   always @(*) begin
-    IM      = {17'h0_0000 ,IR[14:0]};
-    ID_SH   = IR[4:0];
+    IM      = {17'h0_0000 ,instrc[14:0]};
+    ID_SH   = instrc[4:0];
     // IF CS is true, and the leftmost of imm is 1,
     // it need to be extend.
-    if(CS & IR[14]) begin
-      IM = {17'h1_ffff, IR[14:0]};
+    if(CS & instrc[14]) begin
+      IM = {17'h1_ffff, instrc[14:0]};
     end
   end
 
   
   // mux A
   always @(*) begin
-    BUS_A = RA;
-    case({HA, MA})
-      2'b00 : BUS_A = RA;
-      2'b01 : BUS_A = PC_1; // for JML
-      3'b10 : BUS_A = FWD;
+    case({WHA, HA, MA})
+      3'b000 : BUS_A = RA;
+      3'b001 : BUS_A = PC_1; // for JML
+      3'b010 : BUS_A = FWD;
+      3'b100 : BUS_A = BUS_D;
+      default:BUS_A = 0;
     endcase
   end
 
   // mux B
   always @(*) begin
-    BUS_B = RB;
-    case({HB, MB})
-      2'b00 : BUS_B = RB;
-      2'b01 : BUS_B = IM; // for constant.
-      3'b10 : BUS_B = FWD;
+    case({WHB, HB, MB})
+      3'b000 : BUS_B = RB;
+      3'b001 : BUS_B = IM; // for constant.
+      3'b010 : BUS_B = FWD;
+      3'b100 : BUS_B = BUS_D;
+      default:BUS_B = 0;
     endcase
   end
 
@@ -177,6 +203,8 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
     // finally, DA need to be equal to rather AA or BA.
     HA = (EX_RW) & (|EX_DA) & ~(MA) & (EX_DA == ID_AA);
     HB = (EX_RW) & (|EX_DA) & ~(MB) & (EX_DA == ID_BA);
+    WHA= (WB_RW) & (|WB_DA) & ~(MA) & (WB_DA == ID_AA);
+    WHB= (WB_RW) & (|WB_DA) & ~(MB) & (WB_DA == ID_BA);
   end
 
   // MUX D' (fwd unit)
@@ -214,16 +242,16 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
 
   // MUX D
   always @(*) begin
-    BUS_D = 0;
     case(WB_MD)
       2'b00 : BUS_D = WB_F;
       2'b01 : BUS_D = WB_DIN;
       2'b10 : BUS_D = WB_SLT;
+      default:BUS_D = 0;
     endcase
   end
 
   always @(*) begin
-    PC_NEXT = PC + 1;
+      PC_NEXT = PC + 1;
     case(C_SELECT)
       2'b01 : PC_NEXT = BrA;
       2'b10 : PC_NEXT = RAA;
