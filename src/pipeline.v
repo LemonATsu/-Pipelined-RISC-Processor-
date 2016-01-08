@@ -255,7 +255,11 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
   end
 
   always @(*) begin
-    C_SELECT = {EX_BS[1], (((EX_PS ^ Z) | EX_BS[1]) & EX_BS[0])};
+    // avoid contiguous branch 
+    if(!flush_ID)
+      C_SELECT = {EX_BS[1], (((EX_PS ^ Z) | EX_BS[1]) & EX_BS[0])};
+    else
+      C_SELECT = 0;
   end
 
 endmodule
