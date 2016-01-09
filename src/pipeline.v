@@ -90,7 +90,7 @@ reg [31:0] instrc, instrc_next;
       WB_MD   = EX_MD;
       WB_DA   = EX_DA;
       WB_F    = F;
-      WB_SLT  = {31'b0, N ^ Z};
+      WB_SLT  = {31'b0, N ^ V};
       WB_DIN  = D_IN;
         
       EX_RW    = ID_RW;
@@ -224,7 +224,7 @@ func_unit FUNCUNIT(.FS(EX_FS), .SH(EX_SH), .A(EX_BUSA), .B(EX_BUSB),
     case(EX_MD)
       2'b00 : FWD = F;
       2'b01 : FWD = D_IN;
-      2'b10 : FWD = {31'b0, N ^ Z};
+      2'b10 : FWD = {31'b0, N ^ V};
     endcase
   end
  
