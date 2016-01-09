@@ -6,10 +6,11 @@
 // BA     : 14-10
 
 module instruction_decoder (
+    input  wire flush,
     input  wire [31:0] IR,
-    output wire [4:0]  DA,
-    output wire [4:0]  AA,
-    output wire [4:0]  BA,
+    output reg  [4:0]  DA,
+    output reg  [4:0]  AA,
+    output reg  [4:0]  BA,
     output reg         RW,
     output reg  [1:0]  MD,
     output reg  [1:0]  BS,
@@ -20,13 +21,14 @@ module instruction_decoder (
     output reg         MA,
     output reg         CS
     );
-wire [6:0] opcode;
+reg [6:0] opcode;
 
+/*
 assign DA     = IR[24:20];
 assign AA     = IR[19:15];
 assign BA     = IR[14:10];
 assign opcode = IR[31:25];
-
+*/
 parameter NOP  = 7'b000_0000,
           MOVA = 7'b100_0000,
           ADD  = 7'b000_0010,
@@ -63,38 +65,50 @@ parameter NOP  = 7'b000_0000,
     MB = 0;
     MA = 0;
     CS = 0;
-    FS = opcode[3:0];
-    case(opcode)
-      // These instructions need only RW, other part are either 0 or don't care.
-      // Just all to 0, and RW to 1.
-      MOVA,
-      MOVB,
-      ADD ,
-      SUB ,
-      AND , 
-      OR  ,
-      XOR ,
-      LSR ,
-      LSL ,
-      NOT  : RW = 1'b1;
-      // These instructions need RW, MB, CS. Other are either 0 or don't care.
-      ADI ,
-      SBI  : {RW, MB, CS} = 3'b1_1_1;
-      // These instructions need only RW and MB.
-      ANI ,
-      ORI ,
-      XRI ,
-      AIU ,
-      SIU  : {RW, MB}             = 2'b1_1;
-      LD   : {RW, MD}             = 3'b1_01;
-      ST   : MW                   = 1'b1;
-      JMR  : BS                   = 2'b10;
-      SLT  : {RW, MD}             = 3'b1_10;
-      BZ   : {BS, MB, CS}         = 4'b01_1_1;
-      BNZ  : {BS, PS, FS, MB, CS} = 9'b01_1_0000_1_1;
-      JMP  : {BS, MB, CS}         = 4'b11_1_1;
-      JML  : {RW, BS, MB, MA, CS} = 6'b1_11_1_1_1;
-    endcase
+    FS = 0;
+    DA = 0;
+    AA = 0;
+    BA = 0;
+    opcode = 0;
+    if(!flush) begin
+      DA = IR[24:20];
+      AA = IR[19:15];
+      BA = IR[14:10];
+      opcode = IR[31:25];
+      FS = IR[28:25];
+      
+      case(opcode)
+        // These instructions need only RW, other part are either 0 or don't care.
+        // Just all to 0, and RW to 1.
+        MOVA,
+        MOVB,
+        ADD ,
+        SUB ,
+        AND , 
+        OR  ,
+        XOR ,
+        LSR ,
+        LSL ,
+        NOT  : RW = 1'b1;
+        // These instructions need RW, MB, CS. Other are either 0 or don't care.
+        ADI ,
+        SBI  : {RW, MB, CS} = 3'b1_1_1;
+        // These instructions need only RW and MB.
+        ANI ,
+        ORI ,
+        XRI ,
+        AIU ,
+        SIU  : {RW, MB}             = 2'b1_1;
+        LD   : {RW, MD}             = 3'b1_01;
+        ST   : MW                   = 1'b1;
+        JMR  : BS                   = 2'b10;
+        SLT  : {RW, MD}             = 3'b1_10;
+        BZ   : {BS, MB, CS}         = 4'b01_1_1;
+        BNZ  : {BS, PS, FS, MB, CS} = 9'b01_1_0000_1_1;
+        JMP  : {BS, MB, CS}         = 4'b11_1_1;
+        JML  : {RW, BS, MB, MA, CS} = 6'b1_11_1_1_1;
+      endcase
+    end
   end
 
 

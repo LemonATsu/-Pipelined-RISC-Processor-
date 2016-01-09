@@ -34,14 +34,14 @@ module pipe_pc_test;
     #(period) ir    = 32'h8000_0000;
     #(period) ir    = 32'h1234_abcd;
     #(period) ir    = 32'h1234_abcd;*/
-    #(period) ir    = 32'h4470_7fff;
+    //#(period) ir    = 32'h4470_7fff;
     /*#(period) ir    = 32'h0487_b400;
     #(period) ir    = 32'h0ac4_2000;
     #(period) ir    = 32'h10e6_2800;
     #(period) ir    = 32'h14f6_3800;*/
-    #(period) ir    = 32'h0000_0000;
-    #(period) ir    = 32'h4413_ffff;
-    #(12*period)
+    //#(period) ir    = 32'h0000_0000;
+    //#(period) ir    = 32'h4413_ffff;
+    #(550*period)
     $finish;
   end
 

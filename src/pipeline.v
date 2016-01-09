@@ -134,7 +134,8 @@ register_file       REGF (.clk(clk), .rst_n(rst_n), .RW(WB_RW),
                           .DA(WB_DA), .AA(ID_AA)   , .BA(ID_BA), .BUS_D(BUS_D),
                           .REG_A(RA), .REG_B(RB));
 
-instruction_decoder INSDE(.IR(instrc), .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
+instruction_decoder INSDE(.flush(|C_SELECT),
+                          .IR(instrc), .DA(ID_DA), .AA(ID_AA), .BA(ID_BA),
                           .RW(ID_RW) , .MD(ID_MD), .BS(ID_BS), .PS(ID_PS), 
                           .MW(ID_MW) , .FS(ID_FS), .MB(MB)   , .MA(MA)   , .CS(CS));
   // constant unit
