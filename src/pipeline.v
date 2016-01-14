@@ -7,7 +7,8 @@ module pipeline(
   output reg [10:0] D_ADDR,// memory access.
   output reg im_oen,
   output reg dm_oen,
-  output reg dm_wen
+  output reg dm_wen,
+  output reg halt
 );
 
 reg  [31:0] BrA, RAA;
@@ -47,7 +48,7 @@ reg [31:0] WB_F, WB_SLT, WB_DIN; // for WB, F came out from func unit, slt is sm
 reg [31:0] BUS_D;          
 reg WHA, WHB;
 reg dm_onext, dm_wnext;
-
+reg halt_next;
 reg [31:0] instrc, instrc_next;
 
 
@@ -62,6 +63,7 @@ reg [31:0] instrc, instrc_next;
       PC_2   = 0;
       I_ADDR = 0;
       im_oen = 1'b1;
+      halt   = 1'b0;
       
       // for each stage. 
       WB_RW  = 0;
@@ -105,6 +107,7 @@ reg [31:0] instrc, instrc_next;
       EX_SH    = ID_SH;
       flush_ID = C_SELECT;        
       D_OUT    = EX_BUSB;
+      halt     = halt_next;
     end
   end
 
@@ -120,6 +123,10 @@ reg [31:0] instrc, instrc_next;
   always @(*) begin
     // C_SELECT to detect branch happen. flush_ID will help flush Instruction in ID
     instrc_next = ((C_SELECT != 2'b00) | flush_ID | !rst_n) ? 32'b0 : IR;
+    halt_next = 0;
+    if(&instrc_next | halt) begin 
+      halt_next = 1'b1;
+    end
   end
 
 

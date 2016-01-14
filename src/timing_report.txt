@@ -1,0 +1,81 @@
+****************************************
+Report : timing
+        -path full
+        -delay max
+        -max_paths 1
+        -sort_by group
+Design : top
+Version: K-2015.06-SP1
+Date   : Thu Jan 14 20:24:43 2016
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: slow   Library: slow
+Wire Load Model Mode: top
+
+  Startpoint: p_line/PC_2_reg[0]
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: p_line/PC_reg[31]
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock clk (rise edge)                                   0.00       0.00
+  clock network delay (ideal)                             0.00       0.00
+  p_line/PC_2_reg[0]/CK (DFFTRXL)                         0.00 #     0.00 r
+  p_line/PC_2_reg[0]/Q (DFFTRXL)                          0.45       0.45 f
+  p_line/add_240/A[0] (pipeline_DW01_add_0)               0.00       0.45 f
+  p_line/add_240/U1_0/CO (ADDFXL)                         0.56       1.01 f
+  p_line/add_240/U1_1/CO (ADDFX1)                         0.28       1.29 f
+  p_line/add_240/U1_2/CO (ADDFXL)                         0.37       1.66 f
+  p_line/add_240/U1_3/CO (ADDFXL)                         0.38       2.03 f
+  p_line/add_240/U1_4/CO (ADDFXL)                         0.38       2.41 f
+  p_line/add_240/U1_5/CO (ADDFXL)                         0.38       2.78 f
+  p_line/add_240/U1_6/CO (ADDFXL)                         0.38       3.16 f
+  p_line/add_240/U1_7/CO (ADDFXL)                         0.39       3.55 f
+  p_line/add_240/U1_8/CO (ADDFX1)                         0.29       3.84 f
+  p_line/add_240/U1_9/CO (ADDFHX2)                        0.20       4.04 f
+  p_line/add_240/U1_10/CO (ADDFHX2)                       0.19       4.23 f
+  p_line/add_240/U1_11/CO (ADDFHX2)                       0.19       4.42 f
+  p_line/add_240/U1_12/CO (ADDFHX2)                       0.19       4.61 f
+  p_line/add_240/U4/Y (NAND2X1)                           0.08       4.69 r
+  p_line/add_240/U6/Y (NAND3X1)                           0.09       4.78 f
+  p_line/add_240/U1_14/CO (ADDFXL)                        0.36       5.14 f
+  p_line/add_240/U1_15/CO (ADDFXL)                        0.39       5.53 f
+  p_line/add_240/U1_16/CO (ADDFX1)                        0.28       5.81 f
+  p_line/add_240/U1_17/CO (ADDFXL)                        0.38       6.19 f
+  p_line/add_240/U1_18/CO (ADDFX1)                        0.28       6.48 f
+  p_line/add_240/U1_19/CO (ADDFXL)                        0.38       6.85 f
+  p_line/add_240/U1_20/CO (ADDFX1)                        0.29       7.14 f
+  p_line/add_240/U1_21/CO (ADDFX1)                        0.27       7.41 f
+  p_line/add_240/U1_22/CO (ADDFXL)                        0.38       7.80 f
+  p_line/add_240/U1_23/CO (ADDFHX2)                       0.21       8.01 f
+  p_line/add_240/U1_24/CO (ADDFHX2)                       0.19       8.20 f
+  p_line/add_240/U1_25/CO (ADDFHX2)                       0.19       8.38 f
+  p_line/add_240/U1_26/CO (ADDFHX2)                       0.19       8.57 f
+  p_line/add_240/U1_27/CO (ADDFHX2)                       0.19       8.75 f
+  p_line/add_240/U1_28/CO (ADDFHX2)                       0.18       8.94 f
+  p_line/add_240/U1_29/CO (ADDFX1)                        0.27       9.21 f
+  p_line/add_240/U1_30/CO (ADDFHX2)                       0.21       9.41 f
+  p_line/add_240/U1_31/Y (XOR3X2)                         0.18       9.59 f
+  p_line/add_240/SUM[31] (pipeline_DW01_add_0)            0.00       9.59 f
+  p_line/U58/Y (NAND2X1)                                  0.08       9.66 r
+  p_line/U65/Y (NAND3X1)                                  0.08       9.74 f
+  p_line/PC_reg[31]/D (DFFQX1)                            0.00       9.74 f
+  data arrival time                                                  9.74
+
+  clock clk (rise edge)                                  10.00      10.00
+  clock network delay (ideal)                             0.00      10.00
+  p_line/PC_reg[31]/CK (DFFQX1)                           0.00      10.00 r
+  library setup time                                     -0.25       9.75
+  data required time                                                 9.75
+  --------------------------------------------------------------------------
+  data required time                                                 9.75
+  data arrival time                                                 -9.74
+  --------------------------------------------------------------------------
+  slack (MET)                                                        0.00
+
+

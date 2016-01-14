@@ -1,0 +1,29 @@
+****************************************
+Report : area
+Design : top
+Version: K-2015.06-SP1
+Date   : Thu Jan 14 20:24:55 2016
+****************************************
+
+Library(s) Used:
+
+    slow (File: /theda21_2/CBDK_IC_Contest/cur/SynopsysDC/db/slow.db)
+    USERLIB (File: /users/course/2015F/cs4125/dsd18/final/src/RAM2Kx32_slow_syn.db)
+
+Number of ports:                         1145
+Number of nets:                          6333
+Number of cells:                         4986
+Number of combinational cells:           3598
+Number of sequential cells:              1374
+Number of macros/black boxes:               2
+Number of buf/inv:                        736
+Number of references:                       2
+
+Combinational area:              39406.838686
+Buf/Inv area:                     4145.050756
+Noncombinational area:           45634.600233
+Macro/Black Box area:           966506.875000
+Net Interconnect area:      undefined  (No wire load specified)
+
+Total cell area:               1051548.313919
+Total area:                 undefined

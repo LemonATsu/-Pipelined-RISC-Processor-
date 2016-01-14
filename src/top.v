@@ -1,8 +1,8 @@
 module top
 #(parameter pre_i="ins.dat", pre_d="bin.dat")(
-  input clk,
-  input rst_n
-  //input [31:0]ir
+  input  clk,
+  input  rst_n,
+  output halt
 );
 
 wire [31:0] dm_in, dm_out;
@@ -15,7 +15,7 @@ assign ir = im_in;
 pipeline p_line(.clk(clk)       , .rst_n(rst_n)  ,
                 .IR(ir)      , .I_ADDR(ins_addr),
                 .D_IN(dm_in)    , .D_OUT(dm_out)   , .D_ADDR(data_addr),
-                .im_oen(im_oen) , .dm_oen(dm_oen)  , .dm_wen(dm_wen)  );
+                .im_oen(im_oen) , .dm_oen(dm_oen)  , .dm_wen(dm_wen)  , .halt(halt));
 
 RAM2Kx32 #(
   .preload_file(pre_i)
